@@ -132,6 +132,7 @@ export default function App() {
   const [showFormModal, setShowFormModal] = useState(false);
   const [notification, setNotification] = useState(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
 
   // Derive HTML for exports using LIVE state
   const emailHtml = getEmailHtml(invoice);
@@ -208,7 +209,9 @@ export default function App() {
   };
 
   const handleSendInvoice = () => {
-    if (!isValid) return;
+    if (!isValid || isSendingInvoice) return;
+    setIsSendingInvoice(true);
+
     const totals = calculateTotals(invoice);
     const subject = encodeURIComponent(
       `Invoice #${invoice.invoiceNumber} from ${invoice.company.name}`,
@@ -218,6 +221,10 @@ export default function App() {
     );
 
     window.location.href = `mailto:${invoice.client.email}?subject=${subject}&body=${body}`;
+
+    setTimeout(() => {
+      setIsSendingInvoice(false);
+    }, 2500);
   };
 
   // Event delegation to intercept click on "Pay Invoice Online" button in rendered HTML
@@ -291,12 +298,18 @@ export default function App() {
 
             <button
               onClick={handleSendInvoice}
-              disabled={!isValid}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg border-none transition-all flex items-center gap-2 ${isValid ? "bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer " : "bg-slate-800 text-slate-500 cursor-not-allowed "}`}
+              disabled={!isValid || isSendingInvoice}
+              className={`px-3.5 py-1.5 min-w-32 justify-center text-xs font-medium rounded-lg border-none transition-all flex items-center gap-2 ${isValid && !isSendingInvoice ? "bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer " : "bg-slate-800 text-slate-500 cursor-not-allowed "}`}
               title="Send via default mail client"
             >
-              <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Send Invoice</span>
+              {isSendingInvoice ? (
+                <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isSendingInvoice ? "Sending..." : "Send Invoice"}
+              </span>
             </button>
 
             <button

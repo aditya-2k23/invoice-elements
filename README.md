@@ -1,48 +1,92 @@
-# Invoice Elements
+# Invoice Studio
 
-A dual-mode invoice generator built with [Unlayer Elements](https://github.com/unlayer/elements) — one React component tree, rendered as both a payment reminder email and a print-ready PDF invoice.
+A dual-mode invoice and payment reminder generator built with React and [Unlayer Elements](https://github.com/unlayer/elements). One component tree renders both an HTML payment reminder email and a print-ready PDF invoice.
 
-Built for Unlayer's **Build with Elements Challenge**.
+Built for the **Build with Elements Challenge**.
 
-## The problem this solves
+## Why we built this
 
-Most invoicing systems maintain two separate templates: an HTML email for reminders and receipts, and a separate PDF or print layout for the actual document. Same data, same branding, two codebases to keep in sync.
+Most invoicing tools maintain two separate templates: an HTML email for reminders and receipts, and a separate PDF or print layout for the official document. Keeping both synced when the design or the invoice math changes is tedious and easy to break.
 
-Unlayer Elements renders the same JSX tree to email-safe HTML, responsive web HTML, or print-ready HTML. This project uses that to define the invoice once and generate both outputs from it. It's also a use case you won't currently find in Unlayer's own [template gallery](https://unlayer.com/templates) — that gallery is entirely HTML email templates, with nothing showing the document/PDF side of Elements.
+Invoice Studio solves this with Unlayer Elements. The invoice layout is defined once in `src/components/InvoiceContent.jsx` using Elements primitives (`Row`, `Column`, `Table`, `Heading`, `Paragraph`, `Divider`). That same tree renders two ways:
+
+- Wrapped in `<Email>` → email-safe HTML for the payment reminder
+- Wrapped in `<Document>` → print-ready HTML for the PDF invoice
 
 ## Screenshots
 
-_Add screenshot or GIF here before submitting — side-by-side of the email view and PDF view is the clearest way to show what this does._
+_Add screenshot or GIF here before submitting — side-by-side of the email view and PDF view, plus the invoice form in action, is the clearest way to show what this does._
 
-## How it works
+## Features
 
-- `src/data/invoiceData.js` — the single source of truth. Company info, client info, line items, tax, totals. Everything downstream reads from this one object.
-- `src/components/InvoiceContent.jsx` — the shared component tree, built entirely with Elements primitives (`Row`, `Column`, `Table`, `Heading`, `Paragraph`, `Divider`, `Button`). This file doesn't know or care which output mode it ends up in.
-- `src/components/EmailWrapper.jsx` — wraps `InvoiceContent` in Elements' `<Email>` root and calls `renderToHtml()` to produce email-safe markup.
-- `src/components/DocumentWrapper.jsx` — wraps the same `InvoiceContent` in Elements' `<Document>` root and produces print-ready HTML.
-- `src/App.jsx` — the app shell: view switcher, copy-HTML button, print/download button. This is the only part of the app that uses Tailwind.
+- **Single data source, two live outputs**: edit the invoice in one form and both the email and document previews update instantly — no separate templates to keep in sync.
+- **Full invoice editor**: a modal form to set company info, client info, invoice details, line items (add/remove), tax rate, discount, notes, and payment/bank details, with totals recalculated live. `Ctrl + Enter` closes the editor, `Esc` cancels.
+- **Form validation**: required fields (client name, client email, at least one valid line item) are checked before Send or Download are enabled, with an inline "Missing required fields" indicator.
+- **Preset sample data**: one-click Freelance, Agency, or Wholesale demo invoices, or reset back to the original sample data.
+- **Three preview modes**: side-by-side, email-only, or document-only, so you can inspect either output in isolation.
+- **Send Invoice**: opens the user's default mail client via `mailto:`, prefilled with the client's email, subject line, and an invoice summary (invoice number, due date, total due).
+- **Download PDF**: renders the document view to a high-resolution PNG (`html-to-image`) and embeds it into a matching-size PDF (`jsPDF`), opened in a new tab — with a loading indicator while it generates.
+- **Pay button interception**: the "Pay Invoice Online" button in the preview uses a placeholder checkout URL and is intercepted in-app with a notification, demonstrating where a real payment gateway would go without wiring one up.
+- **Strict styling boundary**: all content inside `<Email>`/`<Document>` uses Elements' own style props (`backgroundColor`, `fontSize`, `padding`, etc.) so the output survives real email clients and print engines. Tailwind CSS v4 is used only for the app shell — forms, toolbar, buttons — never inside the invoice content itself.
 
-Two rules kept the content tree honest during development:
+## Project Structure
 
-1. **No Tailwind inside `<Email>` or `<Document>`.** Everything in the invoice content uses Elements' own style props (`backgroundColor`, `fontSize`, `padding`, etc.), because that markup has to survive actual email clients and print engines — Tailwind classes don't make it through that pipeline. Tailwind is scoped to the app shell only.
-2. **Row/Column counts have to match exactly.** Elements enforces this — a `Row` with `layout={ColumnLayouts.TwoEqual}` needs exactly 2 `Column` children, no more, no less.
-
-PDF export doesn't use a PDF library. `<Document>` produces print-ready HTML, and the "Download PDF" button just triggers the browser's native `window.print()` against that view, with `@media print` rules in `index.css` hiding the app chrome and isolating the invoice.
-
-## Running it
-
-```powershell
-npm install
-npm run dev
+```text
+invoice-elements/
+├── index.html
+├── package.json
+├── vite.config.js
+└── src/
+    ├── main.jsx
+    ├── index.css                # Tailwind imports + print styles
+    ├── App.jsx                  # App shell, view switcher, modal, PDF export, send logic
+    ├── components/
+    │   ├── InvoiceContent.jsx   # Shared Elements component tree
+    │   ├── EmailWrapper.jsx     # Wraps InvoiceContent in <Email>
+    │   ├── DocumentWrapper.jsx  # Wraps InvoiceContent in <Document>
+    │   └── InvoiceForm.jsx      # Invoice editor form (used inside the modal)
+    └── data/
+        └── invoiceData.js       # Default invoice data + total calculations
 ```
 
-Opens at `http://localhost:5173`.
+## Getting Started
 
-```powershell
-npm run build     # production build
-npm run preview   # preview the production build locally
+### Prerequisites
+
+Node.js 18+ (20+ recommended).
+
+### Running locally
+
+1. Clone the repository and install dependencies:
+
+```bash
+   git clone https://github.com/aditya-2k23/invoice-elements.git
+   cd invoice-elements
+   npm install
 ```
 
-## Stack
+2. Start the development server:
 
-React 19, Vite, `@unlayer/react-elements`, Tailwind CSS v4, lucide-react for icons.
+```bash
+   npm run dev
+```
+
+3. Open `http://localhost:5173` in your browser.
+
+### Available Scripts
+
+- `npm run dev` — starts the local development server
+- `npm run build` — builds the app for production
+- `npm run preview` — previews the production build locally
+
+## Tech Stack
+
+- **Framework**: React 19, Vite
+- **UI Primitives**: `@unlayer/react-elements`
+- **Styling**: Tailwind CSS v4
+- **PDF Generation**: `html-to-image`, `jsPDF`
+- **Icons**: Lucide React
+
+## Known Limitations
+
+No backend or database — all invoice data lives in browser state and resets on reload. "Send Invoice" opens your own mail client rather than sending server-side, and PDF export is image-based (not vector text) since it's built on the browser's rendered output rather than a PDF text-layer library.
