@@ -7,19 +7,21 @@
 ## 📸 Demo Preview
 
 > [!NOTE]
-> *screenshot/GIF goes here*
+> _screenshot/GIF goes here_
 
 ---
 
 ## 🌟 What & Why
 
 When building transactional workflows (e.g. e-commerce, billing, SaaS invoicing), developers usually maintain two separate templates:
+
 1. An HTML email template for payment reminders or receipts.
 2. A separate PDF or print document template for formal accounting.
 
 This leads to duplicated logic, inconsistent styling, and high maintenance overhead.
 
 **This project solves that problem** using **Unlayer Elements**:
+
 - **Single Source of Truth**: A single invoice JavaScript data model (`src/data/invoiceData.js`).
 - **Single Component Tree**: One shared React component tree (`src/components/InvoiceContent.jsx`) built with Elements primitives (`Row`, `Column`, `Table`, `Heading`, `Paragraph`, `Divider`, `Button`).
 - **Dual Output**:
@@ -45,20 +47,24 @@ This leads to duplicated logic, inconsistent styling, and high maintenance overh
 ## 🚦 Installation & Setup
 
 ### Prerequisites
+
 - Node.js (v18 or higher recommended)
 - npm or yarn
 
 ### Quickstart
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Run the development server**:
+
    ```bash
    npm run dev
    ```
+
    Open your browser at `http://localhost:5173`.
 
 3. **Build for production**:

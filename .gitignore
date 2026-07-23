@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 .gitgenie
+# Ignore Git Commit Genie data
+.gitgenie/**
