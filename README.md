@@ -1,103 +1,48 @@
-# Unlayer Elements Dual-Mode Invoice Generator 🚀
+# Invoice Elements
 
-> **Write Once, Render Many** — A hackathon application built with [Unlayer Elements (`@unlayer/react-elements`)](https://github.com/unlayer/elements) demonstrating single-source React component rendering for both email-safe HTML reminders and print-ready PDF invoices.
+A dual-mode invoice generator built with [Unlayer Elements](https://github.com/unlayer/elements) — one React component tree, rendered as both a payment reminder email and a print-ready PDF invoice.
 
----
+Built for Unlayer's **Build with Elements Challenge**.
 
-## 📸 Demo Preview
+## The problem this solves
 
-> [!NOTE]
-> _screenshot/GIF goes here_
+Most invoicing systems maintain two separate templates: an HTML email for reminders and receipts, and a separate PDF or print layout for the actual document. Same data, same branding, two codebases to keep in sync.
 
----
+Unlayer Elements renders the same JSX tree to email-safe HTML, responsive web HTML, or print-ready HTML. This project uses that to define the invoice once and generate both outputs from it. It's also a use case you won't currently find in Unlayer's own [template gallery](https://unlayer.com/templates) — that gallery is entirely HTML email templates, with nothing showing the document/PDF side of Elements.
 
-## 🌟 What & Why
+## Screenshots
 
-When building transactional workflows (e.g. e-commerce, billing, SaaS invoicing), developers usually maintain two separate templates:
+_Add screenshot or GIF here before submitting — side-by-side of the email view and PDF view is the clearest way to show what this does._
 
-1. An HTML email template for payment reminders or receipts.
-2. A separate PDF or print document template for formal accounting.
+## How it works
 
-This leads to duplicated logic, inconsistent styling, and high maintenance overhead.
+- `src/data/invoiceData.js` — the single source of truth. Company info, client info, line items, tax, totals. Everything downstream reads from this one object.
+- `src/components/InvoiceContent.jsx` — the shared component tree, built entirely with Elements primitives (`Row`, `Column`, `Table`, `Heading`, `Paragraph`, `Divider`, `Button`). This file doesn't know or care which output mode it ends up in.
+- `src/components/EmailWrapper.jsx` — wraps `InvoiceContent` in Elements' `<Email>` root and calls `renderToHtml()` to produce email-safe markup.
+- `src/components/DocumentWrapper.jsx` — wraps the same `InvoiceContent` in Elements' `<Document>` root and produces print-ready HTML.
+- `src/App.jsx` — the app shell: view switcher, copy-HTML button, print/download button. This is the only part of the app that uses Tailwind.
 
-**This project solves that problem** using **Unlayer Elements**:
+Two rules kept the content tree honest during development:
 
-- **Single Source of Truth**: A single invoice JavaScript data model (`src/data/invoiceData.js`).
-- **Single Component Tree**: One shared React component tree (`src/components/InvoiceContent.jsx`) built with Elements primitives (`Row`, `Column`, `Table`, `Heading`, `Paragraph`, `Divider`, `Button`).
-- **Dual Output**:
-  - **Payment Reminder Email**: Wrapped in `<Email>`, rendered to email-safe production HTML with `renderToHtml()`.
-  - **PDF Invoice**: Wrapped in `<Document>`, rendered to print-optimized HTML and printed directly via the browser's native `window.print()` engine using `@media print` rules.
+1. **No Tailwind inside `<Email>` or `<Document>`.** Everything in the invoice content uses Elements' own style props (`backgroundColor`, `fontSize`, `padding`, etc.), because that markup has to survive actual email clients and print engines — Tailwind classes don't make it through that pipeline. Tailwind is scoped to the app shell only.
+2. **Row/Column counts have to match exactly.** Elements enforces this — a `Row` with `layout={ColumnLayouts.TwoEqual}` needs exactly 2 `Column` children, no more, no less.
 
----
+PDF export doesn't use a PDF library. `<Document>` produces print-ready HTML, and the "Download PDF" button just triggers the browser's native `window.print()` against that view, with `@media print` rules in `index.css` hiding the app chrome and isolating the invoice.
 
-## 🛠️ Architecture & Key Rules
+## Running it
 
-1. **Tailwind CSS Boundary**:
-   - Tailwind CSS (v4) is strictly isolated to the outer application shell (header, view switcher, action toolbar, side-by-side containers, code modal).
-   - The invoice content tree uses **zero** Tailwind classes. Everything inside `<Email>` and `<Document>` uses Unlayer Elements' native style props (`backgroundColor`, `color`, `fontSize`, `padding`, `border`, etc.) to ensure HTML output survives email client rendering and print engines without relying on external CSS frameworks.
-
-2. **Strict Structural Layout Compliance**:
-   - Unlayer Elements enforces exact column matching. Every `<Row layout={ColumnLayouts...}>` in `InvoiceContent.jsx` contains the precise number of `<Column>` children required by that layout configuration (e.g. `ColumnLayouts.TwoEqual` strictly contains 2 `<Column>` components).
-
-3. **Zero Heavy Heavyweight PDF Dependencies**:
-   - Uses Elements' `<Document>` root wrapper paired with native `@media print` CSS for instant, lightweight print-to-PDF output via `window.print()`.
-
----
-
-## 🚦 Installation & Setup
-
-### Prerequisites
-
-- Node.js (v18 or higher recommended)
-- npm or yarn
-
-### Quickstart
-
-1. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-2. **Run the development server**:
-
-   ```bash
-   npm run dev
-   ```
-
-   Open your browser at `http://localhost:5173`.
-
-3. **Build for production**:
-   ```bash
-   npm run build
-   ```
-
----
-
-## 📁 Project Structure
-
-```text
-invoice-elements/
-├── src/
-│   ├── data/
-│   │   └── invoiceData.js      # Central invoice data model & financial calculations
-│   ├── components/
-│   │   ├── InvoiceContent.jsx  # Shared Unlayer Elements component tree
-│   │   ├── EmailWrapper.jsx    # <Email> root wrapper + getEmailHtml()
-│   │   └── DocumentWrapper.jsx # <Document> root wrapper + getDocumentHtml()
-│   ├── App.jsx                 # App shell UI, view modes, Copy HTML, Print PDF
-│   ├── main.jsx                # App entrypoint
-│   └── index.css               # Tailwind CSS v4 setup & @media print stylesheet
-├── package.json
-├── vite.config.js
-└── README.md
+```powershell
+npm install
+npm run dev
 ```
 
----
+Opens at `http://localhost:5173`.
 
-## ⚡ Tech Stack
+```powershell
+npm run build     # production build
+npm run preview   # preview the production build locally
+```
 
-- **Core**: React 19 + Vite 6
-- **Template System**: `@unlayer/react-elements`
-- **Shell Styling**: Tailwind CSS v4 (`@tailwindcss/vite`)
-- **Icons**: `lucide-react`
+## Stack
+
+React 19, Vite, `@unlayer/react-elements`, Tailwind CSS v4, lucide-react for icons.
