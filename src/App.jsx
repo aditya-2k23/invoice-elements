@@ -1,36 +1,223 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText,
   Mail,
   Eye,
-  Copy,
-  Check,
-  Printer,
-  Code,
+  ExternalLink,
   Info,
+  Send,
+  RefreshCw,
+  Edit,
+  CornerDownLeft,
+  Command,
+  Loader2,
 } from "lucide-react";
-import { invoiceData } from "./data/invoiceData";
+import { toPng } from "html-to-image";
+import { jsPDF } from "jspdf";
+import { invoiceData, calculateTotals } from "./data/invoiceData";
 import { EmailWrapper, getEmailHtml } from "./components/EmailWrapper";
 import { DocumentWrapper, getDocumentHtml } from "./components/DocumentWrapper";
+import { InvoiceForm } from "./components/InvoiceForm";
+
+// Demo Data Presets
+const demoFreelance = {
+  ...invoiceData,
+  invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+  company: {
+    ...invoiceData.company,
+    name: "Alex Dev",
+    tagline: "Full-Stack Web Development",
+    email: "alex@dev.local",
+  },
+  client: {
+    ...invoiceData.client,
+    name: "Startup Inc",
+    company: "NextGen Software",
+    email: "billing@startup.local",
+  },
+  items: [
+    {
+      id: 1,
+      title: "Frontend Development",
+      details: "React application build",
+      quantity: 40,
+      unitPrice: 75.0,
+    },
+    {
+      id: 2,
+      title: "Backend API",
+      details: "Node.js endpoints",
+      quantity: 20,
+      unitPrice: 85.0,
+    },
+  ],
+};
+
+const demoAgency = {
+  ...invoiceData,
+  invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+  company: {
+    ...invoiceData.company,
+    name: "Creative Spark Agency",
+    tagline: "Marketing & Strategy",
+    email: "hello@creativespark.local",
+  },
+  client: {
+    ...invoiceData.client,
+    name: "Retail Corp",
+    company: "Global Goods",
+    email: "accounts@retailcorp.local",
+  },
+  items: [
+    {
+      id: 1,
+      title: "Q3 Marketing Retainer",
+      details: "Monthly social media & ads management",
+      quantity: 1,
+      unitPrice: 5000.0,
+    },
+    {
+      id: 2,
+      title: "Ad Spend Reimbursement",
+      details: "Google Ads (July)",
+      quantity: 1,
+      unitPrice: 1250.0,
+    },
+  ],
+};
+
+const demoGoods = {
+  ...invoiceData,
+  invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+  company: {
+    ...invoiceData.company,
+    name: "Artisan Coffee Roasters",
+    tagline: "Wholesale Beans",
+    email: "orders@artisancoffee.local",
+  },
+  client: {
+    ...invoiceData.client,
+    name: "Local Cafe",
+    company: "Morning Brews LLC",
+    email: "manager@localcafe.local",
+  },
+  items: [
+    {
+      id: 1,
+      title: "Espresso Blend (5lb bags)",
+      details: "Dark roast",
+      quantity: 10,
+      unitPrice: 65.0,
+    },
+    {
+      id: 2,
+      title: "Single Origin Ethiopia (5lb bags)",
+      details: "Light roast",
+      quantity: 5,
+      unitPrice: 80.0,
+    },
+    {
+      id: 3,
+      title: "Wholesale Shipping",
+      details: "Next day delivery",
+      quantity: 1,
+      unitPrice: 25.0,
+    },
+  ],
+};
 
 export default function App() {
+  const [invoice, setInvoice] = useState(invoiceData);
   const [viewMode, setViewMode] = useState("split"); // 'split' | 'email' | 'pdf'
-  const [copied, setCopied] = useState(false);
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const [activeCodeTab, setActiveCodeTab] = useState("email"); // 'email' | 'pdf'
+  const [showFormModal, setShowFormModal] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const emailHtml = getEmailHtml(invoiceData);
-  const pdfHtml = getDocumentHtml(invoiceData);
+  // Derive HTML for exports using LIVE state
+  const emailHtml = getEmailHtml(invoice);
+  const pdfHtml = getDocumentHtml(invoice);
 
-  const handleCopyEmailHtml = () => {
-    navigator.clipboard.writeText(emailHtml);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  // Basic Validation
+  const isValid =
+    invoice.client.name?.trim() !== "" &&
+    invoice.client.email?.trim() !== "" &&
+    invoice.items.length > 0 &&
+    invoice.items.every(
+      (i) => i.title?.trim() !== "" && i.quantity > 0 && i.unitPrice >= 0,
+    );
+
+  // Keyboard Shortcuts for Modal
+  useEffect(() => {
+    if (!showFormModal) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowFormModal(false);
+      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        setShowFormModal(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showFormModal]);
+
+  const handleDownloadPdf = async () => {
+    if (!isValid || isGeneratingPdf) return;
+
+    const element = document.getElementById("pdf-content-wrapper");
+    if (!element) return;
+
+    setIsGeneratingPdf(true);
+
+    try {
+      // 1. Convert the DOM element to a high-quality PNG
+      // We set a slightly larger scale (pixelRatio) for better PDF text clarity
+      const dataUrl = await toPng(element, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+
+      // Calculate exact dimensions in CSS pixels
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+
+      // 2. Initialize jsPDF with dynamic dimensions matching the element
+      const pdf = new jsPDF({
+        orientation: width > height ? "landscape" : "portrait",
+        unit: "px",
+        format: [width, height],
+      });
+
+      pdf.setProperties({
+        title: `Invoice - ${invoice.client.name}`,
+      });
+
+      // 3. Add image and open in new tab
+      // Drawing a 2x resolution image into a 1x size box gives crisp Retina-quality text!
+      pdf.addImage(dataUrl, "PNG", 0, 0, width, height);
+      const pdfBlobUrl = pdf.output("bloburl");
+      window.open(pdfBlobUrl, "_blank");
+    } catch (err) {
+      console.error("Failed to generate PDF", err);
+      alert("Failed to generate PDF. Check console for details.");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
-  const handlePrintPdf = () => {
-    window.print();
+  const handleSendInvoice = () => {
+    if (!isValid) return;
+    const totals = calculateTotals(invoice);
+    const subject = encodeURIComponent(
+      `Invoice #${invoice.invoiceNumber} from ${invoice.company.name}`,
+    );
+    const body = encodeURIComponent(
+      `Hi ${invoice.client.name},\n\nPlease find the details for Invoice #${invoice.invoiceNumber} below.\n\nDue Date: ${invoice.dueDate}\nTotal Due: ${totals.totalAmount}\n\nFull formatted invoice HTML is available via Copy Email HTML.\n\nThank you,\n${invoice.company.name}`,
+    );
+
+    window.location.href = `mailto:${invoice.client.email}?subject=${subject}&body=${body}`;
   };
 
   // Event delegation to intercept click on "Pay Invoice Online" button in rendered HTML
@@ -38,9 +225,19 @@ export default function App() {
     const link = e.target.closest('a[href*="pay.apexdigital.io"]');
     if (link) {
       e.preventDefault();
-      setNotification("This would open a secure payment gateway in production.");
+      setNotification(
+        "This would open a secure payment gateway in production.",
+      );
       setTimeout(() => setNotification(null), 4000);
     }
+  };
+
+  const handleReset = () => {
+    setInvoice(JSON.parse(JSON.stringify(invoiceData)));
+  };
+
+  const handleLoadPreset = (presetData) => {
+    setInvoice(JSON.parse(JSON.stringify(presetData)));
   };
 
   return (
@@ -63,14 +260,14 @@ export default function App() {
       <header className="no-print border-b border-slate-800 bg-slate-900/90 sticky top-0 z-40 px-6 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200">
+            <div className="w-9 h-9 rounded-lg bg-slate-800  flex items-center justify-center text-slate-200">
               <FileText className="w-5 h-5 text-indigo-400" />
             </div>
             <div className="flex items-center gap-3">
               <h1 className="text-lg font-bold tracking-tight text-white">
                 Invoice Studio
               </h1>
-              <span className="px-2.5 py-0.5 text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 rounded-md">
+              <span className="px-2.5 py-0.5 text-xs font-medium bg-slate-800 text-slate-300  rounded-md">
                 Unlayer Elements
               </span>
             </div>
@@ -78,38 +275,44 @@ export default function App() {
 
           {/* Action Toolbar */}
           <div className="flex items-center gap-2 flex-wrap">
+            {!isValid && (
+              <span className="text-xs text-red-400 mr-2 flex items-center gap-1">
+                <Info className="w-3 h-3" /> Missing required fields
+              </span>
+            )}
+
             <button
-              onClick={handleCopyEmailHtml}
-              className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-2 cursor-pointer"
-              title="Copy email-safe HTML string to clipboard"
+              onClick={() => setShowFormModal(true)}
+              className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-900/50 border-none mr-2"
             >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Copied Email HTML</span>
-                </>
+              <Edit className="w-4 h-4" />
+              <span>New Invoice</span>
+            </button>
+
+            <button
+              onClick={handleSendInvoice}
+              disabled={!isValid}
+              className={`px-3.5 py-1.5 text-xs font-medium rounded-lg border-none transition-all flex items-center gap-2 ${isValid ? "bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer " : "bg-slate-800 text-slate-500 cursor-not-allowed "}`}
+              title="Send via default mail client"
+            >
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline">Send Invoice</span>
+            </button>
+
+            <button
+              onClick={handleDownloadPdf}
+              disabled={!isValid || isGeneratingPdf}
+              className={`px-3.5 py-1.5 min-w-30 justify-center text-xs font-medium border-none rounded-lg transition-all flex items-center gap-2 ${isValid && !isGeneratingPdf ? "bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer" : "bg-slate-800 text-slate-500 cursor-not-allowed"}`}
+              title="Open PDF in new tab"
+            >
+              {isGeneratingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
               ) : (
-                <>
-                  <Copy className="w-4 h-4 text-slate-400" />
-                  <span>Copy Email HTML</span>
-                </>
+                <ExternalLink className="w-4 h-4 text-slate-400" />
               )}
-            </button>
-
-            <button
-              onClick={() => setShowCodeModal(true)}
-              className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Code className="w-4 h-4 text-slate-400" />
-              <span>Inspect Output</span>
-            </button>
-
-            <button
-              onClick={handlePrintPdf}
-              className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Download PDF</span>
+              <span className="hidden sm:block">
+                {isGeneratingPdf ? "Generating..." : "Open PDF"}
+              </span>
             </button>
           </div>
         </div>
@@ -124,7 +327,7 @@ export default function App() {
               onClick={() => setViewMode("split")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 cursor-pointer ${
                 viewMode === "split"
-                  ? "bg-slate-800 text-white border border-slate-700 shadow-xs"
+                  ? "bg-slate-800 text-white shadow-xs"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -135,7 +338,7 @@ export default function App() {
               onClick={() => setViewMode("email")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 cursor-pointer ${
                 viewMode === "email"
-                  ? "bg-slate-800 text-blue-400 border border-slate-700 shadow-xs"
+                  ? "bg-slate-800 text-blue-400  shadow-xs"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -146,7 +349,7 @@ export default function App() {
               onClick={() => setViewMode("pdf")}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-2 cursor-pointer ${
                 viewMode === "pdf"
-                  ? "bg-slate-800 text-indigo-400 border border-slate-700 shadow-xs"
+                  ? "bg-slate-800 text-indigo-400 shadow-xs"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -156,7 +359,10 @@ export default function App() {
           </div>
 
           <div className="text-xs text-slate-400 px-3 hidden sm:block">
-            Invoice: <span className="font-mono text-slate-200 font-medium">INV-2026-0892</span>
+            Invoice:{" "}
+            <span className="font-mono text-slate-200 font-medium">
+              {invoice.invoiceNumber || "Untitled"}
+            </span>
           </div>
         </div>
 
@@ -177,7 +383,8 @@ export default function App() {
                   <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
                   <span className="ml-2 text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-blue-400" /> Payment Reminder Email
+                    <Mail className="w-3.5 h-3.5 text-blue-400" /> Payment
+                    Reminder Email
                   </span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-500">
@@ -189,22 +396,22 @@ export default function App() {
               <div className="bg-slate-950/60 px-5 py-2.5 border-b border-slate-800/80 text-xs text-slate-400 space-y-1">
                 <div>
                   <span className="text-slate-500">From:</span>{" "}
-                  {invoiceData.company.name} &lt;{invoiceData.company.email}&gt;
+                  {invoice.company.name} &lt;{invoice.company.email}&gt;
                 </div>
                 <div>
                   <span className="text-slate-500">To:</span>{" "}
-                  {invoiceData.client.name} &lt;{invoiceData.client.email}&gt;
+                  {invoice.client.name} &lt;{invoice.client.email}&gt;
                 </div>
                 <div>
                   <span className="text-slate-500">Subject:</span> Payment
-                  Reminder: Invoice #{invoiceData.invoiceNumber}
+                  Reminder: Invoice #{invoice.invoiceNumber}
                 </div>
               </div>
 
               {/* Rendered Email Body */}
               <div className="p-4 md:p-6 bg-slate-950/40 flex-1 overflow-auto flex justify-center">
-                <div className="w-full max-w-160 shadow-xl rounded-lg overflow-hidden border border-slate-800 bg-white text-slate-900">
-                  <EmailWrapper invoice={invoiceData} />
+                <div className="w-full max-w-160 shadow-xl rounded-lg overflow-hidden border border-slate-800 bg-white text-slate-900 mx-auto">
+                  <EmailWrapper invoice={invoice} />
                 </div>
               </div>
             </div>
@@ -231,8 +438,11 @@ export default function App() {
 
               {/* Document Sheet Container */}
               <div className="p-4 md:p-6 bg-slate-950/40 flex-1 overflow-auto flex justify-center">
-                <div className="w-full max-w-200 bg-white text-slate-900 shadow-xl rounded-xs p-2 md:p-4 border border-slate-300">
-                  <DocumentWrapper invoice={invoiceData} />
+                <div
+                  id="pdf-content-wrapper"
+                  className="w-full max-w-200 bg-white text-slate-900 shadow-xl rounded-xs p-2 md:p-4 border border-slate-300 mx-auto"
+                >
+                  <DocumentWrapper invoice={invoice} />
                 </div>
               </div>
             </div>
@@ -240,77 +450,87 @@ export default function App() {
         </div>
       </main>
 
-      {/* Raw HTML Code Inspector Modal */}
-      {showCodeModal && (
-        <div className="no-print fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
-            <div className="px-6 py-3.5 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Code className="w-5 h-5 text-indigo-400" />
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    Unlayer Elements HTML Output
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Production HTML output from renderToHtml()
-                  </p>
-                </div>
+      {/* Form Editor Modal */}
+      {showFormModal && (
+        <div
+          className="no-print fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center p-4"
+          onClick={() => setShowFormModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-white">
+                  Edit Invoice Details
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Update data to generate the invoice
+                </p>
               </div>
               <button
-                onClick={() => setShowCodeModal(false)}
-                className="text-slate-400 hover:text-white text-xs font-semibold px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 cursor-pointer"
+                onClick={() => setShowFormModal(false)}
+                className="text-slate-400 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer transition-colors"
               >
                 Close &#2715;
               </button>
             </div>
 
-            {/* Modal Code Switcher */}
-            <div className="bg-slate-950 px-6 py-2 border-b border-slate-800 flex items-center gap-3">
-              <button
-                onClick={() => setActiveCodeTab("email")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition-all ${
-                  activeCodeTab === "email"
-                    ? "bg-slate-800 text-blue-400 border border-slate-700"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Email HTML (&lt;Email&gt;)
-              </button>
-              <button
-                onClick={() => setActiveCodeTab("pdf")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md cursor-pointer transition-all ${
-                  activeCodeTab === "pdf"
-                    ? "bg-slate-800 text-indigo-400 border border-slate-700"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Document HTML (&lt;Document&gt;)
-              </button>
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Demo Presets
+                </label>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Reset to default sample data"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Reset
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-6">
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset(demoFreelance)}
+                  className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer transition-colors"
+                >
+                  Freelance
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset(demoAgency)}
+                  className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer transition-colors"
+                >
+                  Agency
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadPreset(demoGoods)}
+                  className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer transition-colors"
+                >
+                  Wholesale
+                </button>
+              </div>
+
+              <InvoiceForm invoice={invoice} setInvoice={setInvoice} />
             </div>
 
-            {/* Code Output Textarea */}
-            <div className="p-6 flex-1 overflow-auto bg-slate-950">
-              <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap break-all select-all p-4 bg-slate-900 rounded-lg border border-slate-800">
-                {activeCodeTab === "email" ? emailHtml : pdfHtml}
-              </pre>
-            </div>
-
-            <div className="px-6 py-3 border-t border-slate-800 bg-slate-900 flex justify-between items-center text-xs text-slate-400">
-              <span>
-                Length:{" "}
-                {activeCodeTab === "email" ? emailHtml.length : pdfHtml.length}{" "}
-                chars
-              </span>
+            <div className="px-6 py-4 border-t border-slate-800 bg-slate-950 flex justify-end shrink-0">
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    activeCodeTab === "email" ? emailHtml : pdfHtml
-                  );
-                  alert("HTML copied to clipboard!");
-                }}
-                className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded cursor-pointer font-medium"
+                onClick={() => setShowFormModal(false)}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-md shadow-indigo-900/50 cursor-pointer flex items-center gap-2 group"
+                title="Generate Invoices (Ctrl + Enter)"
               >
-                Copy Active HTML
+                <span>Generate Invoices</span>
+                <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium bg-indigo-700/50 text-indigo-100 rounded border border-indigo-400/30 group-hover:bg-indigo-600/50 transition-colors">
+                  <Command className="w-3.5 h-3.5" />
+                  <span className="text-[10px] opacity-70">+</span>
+                  <CornerDownLeft className="w-3.5 h-3.5" />
+                </kbd>
               </button>
             </div>
           </div>
