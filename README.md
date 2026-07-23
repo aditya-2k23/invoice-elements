@@ -15,7 +15,8 @@ Invoice Studio solves this with Unlayer Elements. The invoice layout is defined 
 
 ## Screenshots
 
-_Add screenshot or GIF here before submitting — side-by-side of the email view and PDF view, plus the invoice form in action, is the clearest way to show what this does._
+![Demo](./src/assets/demo.png)
+![Image](./src/assets/image.png)
 
 ## Features
 
