@@ -53,7 +53,7 @@ export const invoiceData = {
   discountAmount: 0.00,
 
   notes: "Thank you for partnering with Apex Digital Solutions. Please submit payment within 14 days of invoice issue date.",
-  
+
   paymentMethod: {
     bankName: "First National Tech Bank",
     accountName: "Apex Digital Solutions LLC",

@@ -1,143 +1,18 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import {
+  Layers,
+  Sparkles,
+  Mail,
+  FileText,
+  Copy,
+  Check,
+  Printer,
+  Code,
+  Eye,
+} from "lucide-react";
 import { invoiceData } from "./data/invoiceData";
 import { EmailWrapper, getEmailHtml } from "./components/EmailWrapper";
 import { DocumentWrapper, getDocumentHtml } from "./components/DocumentWrapper";
-
-// Clean SVG Icon Components to eliminate heavy external icon package dependencies
-const LayersIcon = ({ className = "w-5 h-5" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M19 11H5m14 0l-7 7m7-7l-7-7"
-    />
-  </svg>
-);
-
-const SparklesIcon = ({ className = "w-3 h-3" }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 20 20">
-    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-  </svg>
-);
-
-const MailIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-    />
-  </svg>
-);
-
-const FileTextIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-    />
-  </svg>
-);
-
-const CopyIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-    />
-  </svg>
-);
-
-const CheckIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const PrinterIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-    />
-  </svg>
-);
-
-const CodeIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-    />
-  </svg>
-);
-
-const EyeIcon = ({ className = "w-4 h-4" }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-    />
-  </svg>
-);
 
 export default function App() {
   const [viewMode, setViewMode] = useState("split"); // 'split' | 'email' | 'pdf'
@@ -165,7 +40,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-indigo-600 via-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <LayersIcon className="w-5 h-5 text-white" />
+              <Layers className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -173,7 +48,7 @@ export default function App() {
                   Invoice Engine
                 </h1>
                 <span className="px-2 py-0.5 text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full flex items-center gap-1">
-                  <SparklesIcon className="w-3 h-3" /> Unlayer Elements
+                  <Sparkles className="w-3 h-3" /> Unlayer Elements
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -192,12 +67,12 @@ export default function App() {
             >
               {copied ? (
                 <>
-                  <CheckIcon className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-400" />
                   <span className="text-emerald-400">Copied Email HTML!</span>
                 </>
               ) : (
                 <>
-                  <CopyIcon className="w-4 h-4 text-slate-400" />
+                  <Copy className="w-4 h-4 text-slate-400" />
                   <span>Copy Email HTML</span>
                 </>
               )}
@@ -207,7 +82,7 @@ export default function App() {
               onClick={() => setShowCodeModal(true)}
               className="px-4 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 transition-all flex items-center gap-2 cursor-pointer"
             >
-              <CodeIcon className="w-4 h-4 text-indigo-400" />
+              <Code className="w-4 h-4 text-indigo-400" />
               <span>Inspect HTML</span>
             </button>
 
@@ -215,7 +90,7 @@ export default function App() {
               onClick={handlePrintPdf}
               className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer"
             >
-              <PrinterIcon className="w-4 h-4" />
+              <Printer className="w-4 h-4" />
               <span>Download PDF / Print</span>
             </button>
           </div>
@@ -235,7 +110,7 @@ export default function App() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <EyeIcon className="w-4 h-4" />
+              <Eye className="w-4 h-4" />
               <span>Side-by-Side Dual View</span>
             </button>
             <button
@@ -246,7 +121,7 @@ export default function App() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <MailIcon className="w-4 h-4" />
+              <Mail className="w-4 h-4" />
               <span>Email Reminder Mode</span>
             </button>
             <button
@@ -257,7 +132,7 @@ export default function App() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <FileTextIcon className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
               <span>PDF Document Mode</span>
             </button>
           </div>
@@ -287,7 +162,7 @@ export default function App() {
                   <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
                   <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
                   <span className="ml-2 text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                    <MailIcon className="w-3.5 h-3.5 text-blue-400" /> Payment
+                    <Mail className="w-3.5 h-3.5 text-blue-400" /> Payment
                     Reminder Email View
                   </span>
                 </div>
@@ -330,7 +205,7 @@ export default function App() {
               {/* Document Header Bar */}
               <div className="no-print bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileTextIcon className="w-4 h-4 text-indigo-400" />
+                  <FileText className="w-4 h-4 text-indigo-400" />
                   <span className="text-xs font-semibold text-slate-300">
                     Print-Ready PDF Document View
                   </span>
@@ -357,7 +232,7 @@ export default function App() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
             <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CodeIcon className="w-5 h-5 text-indigo-400" />
+                <Code className="w-5 h-5 text-indigo-400" />
                 <div>
                   <h3 className="text-base font-bold text-white">
                     Unlayer Elements Production HTML Output

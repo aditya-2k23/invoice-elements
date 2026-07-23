@@ -1,6 +1,5 @@
-import React from 'react';
-import { Email, renderToHtml } from '@unlayer/react-elements';
-import { InvoiceContent } from './InvoiceContent';
+import { Email, renderToHtml } from "@unlayer/react-elements";
+import { InvoiceContent } from "./InvoiceContent";
 
 export function EmailWrapper({ invoice }) {
   return (
