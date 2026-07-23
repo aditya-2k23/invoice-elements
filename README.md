@@ -91,3 +91,7 @@ Node.js 18+ (20+ recommended).
 ## Known Limitations
 
 No backend or database — all invoice data lives in browser state and resets on reload. "Send Invoice" opens your own mail client rather than sending server-side, and PDF export is image-based (not vector text) since it's built on the browser's rendered output rather than a PDF text-layer library.
+
+## License
+
+This project is licensed under the MIT License. See `/LICENSE` for details.
