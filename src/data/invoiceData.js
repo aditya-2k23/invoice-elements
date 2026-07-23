@@ -7,7 +7,8 @@ export const invoiceData = {
 
   company: {
     name: "Apex Digital Solutions",
-    tagline: "Next-Gen Software & Design Engineering",
+    monogram: "AD",
+    tagline: "Software & Design Engineering",
     address: "100 Innovation Way, Suite 400",
     cityStateZip: "San Francisco, CA 94105",
     email: "billing@apexdigital.io",
@@ -28,22 +29,22 @@ export const invoiceData = {
   items: [
     {
       id: 1,
-      description: "Custom React Component Architecture & UI System",
-      details: "Design system & email/pdf responsive template suite",
+      title: "React UI Component System",
+      details: "Email/PDF template suite",
       quantity: 1,
       unitPrice: 3200.00
     },
     {
       id: 2,
-      description: "Unlayer Elements Integration & API Setup",
-      details: "Dual rendering pipeline for transactional emails & invoices",
+      title: "Unlayer Integration",
+      details: "Dual rendering pipeline",
       quantity: 1,
       unitPrice: 1850.00
     },
     {
       id: 3,
-      description: "Performance Optimization & Print Stylesheet",
-      details: "Browser print engine tuning and cross-client email testing",
+      title: "Performance Tuning",
+      details: "Cross-client testing",
       quantity: 8,
       unitPrice: 150.00
     }
@@ -63,14 +64,23 @@ export const invoiceData = {
   }
 };
 
+export function formatCurrency(amount, currency = "$") {
+  const num = typeof amount === "number" ? amount : parseFloat(amount) || 0;
+  return `${currency}${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export function calculateTotals(invoice) {
   const subtotal = invoice.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   const taxAmount = (subtotal - invoice.discountAmount) * (invoice.taxRatePercent / 100);
   const totalAmount = subtotal - invoice.discountAmount + taxAmount;
 
   return {
-    subtotal: subtotal.toFixed(2),
-    taxAmount: taxAmount.toFixed(2),
-    totalAmount: totalAmount.toFixed(2)
+    subtotalNum: subtotal,
+    taxAmountNum: taxAmount,
+    totalAmountNum: totalAmount,
+    subtotal: formatCurrency(subtotal, invoice.currency),
+    taxAmount: formatCurrency(taxAmount, invoice.currency),
+    discountAmount: formatCurrency(invoice.discountAmount, invoice.currency),
+    totalAmount: formatCurrency(totalAmount, invoice.currency)
   };
 }
